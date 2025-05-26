@@ -1,0 +1,4 @@
+*.zip
+*.xlsx
+pom.txt
+*/__pycache__/*

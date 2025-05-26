@@ -1,0 +1,9 @@
+services:
+  data_generator:
+    build:
+      context: ./data_generator
+      dockerfile: Dockerfile
+    depends_on:
+      - kafka
+    networks:
+      - retail_net
