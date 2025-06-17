@@ -2,3 +2,5 @@
 *.xlsx
 pom.txt
 */__pycache__/*
+secrets/*
+*.pyc

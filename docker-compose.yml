@@ -1,9 +1,172 @@
+name: "UCI-online-retail"
 services:
   data_generator:
     build:
       context: ./data_generator
       dockerfile: Dockerfile
+    env_file: .env
     depends_on:
-      - kafka
+      - kafka-1
+      - kafka-2
+      - kafka-ui
+      - schema-registry
     networks:
       - retail_net
+
+  kafka-1:
+    image: bitnami/kafka:3.9
+    hostname: kafka-1
+    ports:
+      - "29092:29092"
+    volumes:
+      - "kafka_data_1:/bitnami"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_KRAFT_CLUSTER_ID=xYN3lhaZR8qtJRUalXzIgQ
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:19092,2@kafka-2:19092
+      - KAFKA_BROKER_ID=1
+
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9092,CONTROLLER://:19092,EXTERNAL://:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      # - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-1:9092,EXTERNAL://localhost:29092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-1:9092,EXTERNAL://kafka-1:29092
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_CFG_NUM_PARTITIONS=2
+      - KAFKA_CFG_NODE_ID=1
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - BITNAMI_DEBUG=yes
+    networks:
+      - retail_net 
+
+  kafka-2:
+    image: bitnami/kafka:3.9
+    hostname: kafka-2
+    ports:
+      - "29093:29093"
+    volumes:
+      - "kafka_data_2:/bitnami"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_KRAFT_CLUSTER_ID=xYN3lhaZR8qtJRUalXzIgQ
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-1:19092,2@kafka-2:19092
+      - KAFKA_BROKER_ID=2
+
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9092,CONTROLLER://:19092,EXTERNAL://:29093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      # - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-2:9092,EXTERNAL://localhost:29093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-2:9092,EXTERNAL://kafka-2:29093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_CFG_NUM_PARTITIONS=2
+      - KAFKA_CFG_NODE_ID=2
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - BITNAMI_DEBUG=yes
+    networks:
+      - retail_net 
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8081:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: docker-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:9092,kafka-2:9092
+    networks:
+      - retail_net
+
+  aws-handler:
+    build:
+      context: ./aws_handler
+      dockerfile: Dockerfile
+    hostname: aws-handler
+    env_file: .env
+
+    secrets:
+      - aws_access_key_id
+      - aws_secret_access_key
+
+
+  kafka-connect:
+    build:
+      context: ./kafka_s3_sink_connector
+      dockerfile: Dockerfile
+    hostname: kafka-connect
+    env_file: .env
+    ports:
+      - "8083:8083"  # Kafka Connect REST API
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - aws-handler
+      - data_generator
+    environment:
+      - CONNECT_BOOTSTRAP_SERVERS=kafka-1:9092,kafka-2:9092
+      - CONNECT_REST_ADVERTISED_HOST_NAME=kafka-connect
+      - CONNECT_GROUP_ID=kafka-connect-group
+      - CONNECT_CONFIG_STORAGE_TOPIC=connect-configs
+      - CONNECT_OFFSET_STORAGE_TOPIC=connect-offsets
+      - CONNECT_STATUS_STORAGE_TOPIC=connect-status
+      - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.storage.StringConverter
+      - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+      - CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE=false
+      - CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE=false
+      - CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=2
+      - CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=2
+      - CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=2
+      - CONNECT_OFFSET_FLUSH_INTERVAL_MS=10000
+      - CONNECT_PLUGIN_PATH=/usr/share/java,/usr/share/confluent-hub-components
+      - CONNECT_LOG4J_ROOT_LOGLEVEL=ERROR
+      # Optional: Increase heap size if needed
+      # CONNECT_HEAP_OPTS: "-Xms512M -Xmx1G"
+    # volumes:
+    #   - ./kafka-connect-jars:/etc/kafka-connect/jars  # Mount custom connectors here if needed
+    networks:
+      - retail_net
+
+    secrets:
+      - aws_access_key_id
+      - aws_secret_access_key
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.0
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      - kafka-1
+      - kafka-2
+    ports:
+      - "8082:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - retail_net
+
+volumes:
+  kafka_data_1:
+    driver: local
+  kafka_data_2:
+    driver: local
+
+networks:
+  retail_net:
+    driver: bridge
+
+secrets:
+  aws_access_key_id:
+    file: ./secrets/aws_access_key_id
+  aws_secret_access_key:
+    file: ./secrets/aws_secret_access_key
+

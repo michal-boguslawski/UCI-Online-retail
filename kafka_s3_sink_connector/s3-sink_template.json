@@ -1,0 +1,33 @@
+{
+  "name": "s3-sink-sales-event",
+  "config": {
+    "connector.class": "io.confluent.connect.s3.S3SinkConnector",
+    "tasks.max": "1",
+    "topics": "kafka_topic",
+    "topics.dir": "kafka_topic_dir",
+
+    "s3.bucket.name": "s3_bucket_name",
+    "s3.region": "s3_region",                   
+    "s3.part.size": "5242880",
+
+    "flush.size": "30",
+    "rotate.interval.ms": "10000",
+    "schema.compatibility": "BACKWARD",
+    "storage.class": "io.confluent.connect.s3.storage.S3Storage",
+    "format.class": "io.confluent.connect.s3.format.json.JsonFormat",
+    "errors.tolerance": "all",
+
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+
+    "partitioner.class": "io.confluent.connect.storage.partitioner.TimeBasedPartitioner",
+    "timestamp.extractor": "RecordField",
+    "timestamp.field": "InvoiceDate",
+    "path.format": "'year'=YYYY/'month'=MM",
+    "partition.duration.ms": "2592000000",
+    "locale": "en",
+    "timezone": "UTC"
+  }
+}
