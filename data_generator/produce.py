@@ -1,25 +1,41 @@
 from time import sleep
 import os
 from datetime import datetime
-from json import dumps
+from confluent_kafka.serialization import SerializationContext, MessageField
+from confluent_kafka.schema_registry import SchemaRegistryClient, Schema
+from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka import Producer
 
-from helper_functions import get_data, delivery_report, check_kafka_connection
+from helper_functions import get_data, delivery_report, check_kafka_connection, avro_schema_str
 
 # configuration
 topic = os.getenv("KAFKA_TOPIC")
 if topic is None:
     raise ValueError("Environment variable KAFKA_TOPIC is not set!")
-old_invoice_no = '-1'
+old_invoice_no = "-1"
 verbose = False
 
-conf = {
-    "bootstrap.servers": "kafka-1:9092,kafka-2:9092"
+schema_registry_conf = {"url": "http://schema-registry:8081"}
+schema_registry_client = SchemaRegistryClient(schema_registry_conf)
+
+subject = f"{topic}-value"
+schema = Schema(avro_schema_str, "AVRO")
+schema_id = schema_registry_client.register_schema(subject, schema)
+print(f"Schema registered with id: {schema_id}", flush=True)
+
+avro_serializer = AvroSerializer(
+    schema_str=avro_schema_str,
+    schema_registry_client=schema_registry_client,
+    to_dict=lambda obj, ctx: obj  # assume obj is already a dict
+)
+
+producer_conf = {
+    "bootstrap.servers": "kafka-1:9092,kafka-2:9092",
 }
 
-_ = check_kafka_connection(conf["bootstrap.servers"])
+_ = check_kafka_connection(producer_conf["bootstrap.servers"])
 
-producer = Producer(**conf)
+producer = Producer(producer_conf)
 
 # get data generator
 data = get_data()
@@ -44,21 +60,21 @@ while True:
                 producer.produce(
                     topic=topic,
                     key=curr_invoice_no,
-                    value=dumps(order),
+                    value=avro_serializer(order, SerializationContext(topic, MessageField.VALUE)),
                     on_delivery=delivery_report,
                 )
                 if verbose:
                     producer.poll(0)
-                sleep(0.1)
+                # sleep(0.1)
                 
             order = {
                 "InvoiceNo": curr_invoice_no,
-                "InvoiceDate": datetime.strptime(row["InvoiceDate"], '%Y-%m-%d %H:%M:%S').isoformat(),
+                "InvoiceDate": int(datetime.strptime(row["InvoiceDate"], '%Y-%m-%d %H:%M:%S').timestamp() * 1000),
                 "CustomerID": str(row["CustomerID"]),
                 "Country": row["Country"],
                 "OrderList": [order_element, ],
             }
-            if old_invoice_no == -1:
+            if old_invoice_no == "-1":
                 print(order, flush=True)
             old_invoice_no = curr_invoice_no
             
@@ -66,6 +82,9 @@ while True:
             order["OrderList"].append(order_element)
             
     except Exception as e:
-        print(e)
-        print(order)
+        print(e, flush=True)
+        print(order, flush=True)
         break
+    
+    finally:
+        producer.flush()

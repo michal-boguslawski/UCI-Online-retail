@@ -113,19 +113,23 @@ services:
       - CONNECT_OFFSET_STORAGE_TOPIC=connect-offsets
       - CONNECT_STATUS_STORAGE_TOPIC=connect-status
       - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.storage.StringConverter
-      - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-      - CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE=false
       - CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE=false
-      - CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=2
-      - CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=2
-      - CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=2
+      - CONNECT_VALUE_CONVERTER=io.confluent.connect.avro.AvroConverter
+      - CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      - CONNECT_VALUE_CONVERTER_ENHANCED_AVRO_SCHEMA_SUPPORT=true
+      # - CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE=false
+      - CONNECT_REPLICATION_FACTOR=1
+      - CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1
+      - CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1
+      - CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
+      # - CONNECT_INTERNAL_KEY_CONVERTER=io.confluent.connect.avro.AvroConverter
+      # - CONNECT_INTERNAL_VALUE_CONVERTER=io.confluent.connect.avro.AvroConverter
+      - CONNECT_PRODUCER_INTERCEPTOR_CLASSES=io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor
+      - CONNECT_CONSUMER_INTERCEPTOR_CLASSES=io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor
       - CONNECT_OFFSET_FLUSH_INTERVAL_MS=10000
       - CONNECT_PLUGIN_PATH=/usr/share/java,/usr/share/confluent-hub-components
-      - CONNECT_LOG4J_ROOT_LOGLEVEL=ERROR
-      # Optional: Increase heap size if needed
-      # CONNECT_HEAP_OPTS: "-Xms512M -Xmx1G"
-    # volumes:
-    #   - ./kafka-connect-jars:/etc/kafka-connect/jars  # Mount custom connectors here if needed
+      - CONNECT_LOG4J_LOGGERS=org.reflections=ERROR
+      - CONNECT_LOG4J_ROOT_LOGLEVEL=INFO
     networks:
       - retail_net
 

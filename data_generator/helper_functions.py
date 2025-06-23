@@ -70,6 +70,37 @@ def check_kafka_connection(BOOTSTRAP_SERVERS: str, RETRY_INTERVAL: float = 5) ->
             time.sleep(RETRY_INTERVAL)
             
     return True
+
+
+avro_schema_str = """
+{
+  "type": "record",
+  "name": "Order",
+  "fields": [
+    {"name": "InvoiceNo", "type": "string"},
+    {"name": "InvoiceDate", "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+        }
+    },
+    {"name": "CustomerID", "type": "string"},
+    {"name": "Country", "type": "string"},
+    {"name": "OrderList", "type": {
+      "type": "array",
+      "items": {
+        "type": "record",
+        "name": "OrderItem",
+        "fields": [
+          {"name": "StockCode", "type": "string"},
+          {"name": "Description", "type": ["null", "string"]},
+          {"name": "Quantity", "type": "int"},
+          {"name": "UnitPrice", "type": "float"}
+        ]
+      }
+    }}
+  ]
+}
+"""
         
 if __name__ == "__main__":
     df = get_data()
