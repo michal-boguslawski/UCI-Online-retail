@@ -1,12 +1,63 @@
 # Generic considerations
 Filter out products with 0 unit price
 
+## Warehouse diagram
+```markdown
+```mermaid
+erDiagram
+    Customer ||--o{ Order : DimCustomerKey
+    Customer ||--o{ Cancellation : DimCustomerKey
+    Product ||--o{ OrderDetail: DimProductKey
+    Order ||--o{ OrderDetail: DimOrderKey
+    Cancellation ||--o{ OrderDetail: DimOrderKey
+    Product {
+        long DimProductKey
+        string StockCode
+        string Description
+        string ProductModel
+        string ProductVersion
+        bool IsSpecial
+        string SourceSystem
+    }
+    Customer {
+        int DimCustomerKey
+        string CustomerId
+        string SourceSystem
+    }
+    Order {
+        long DimOrderKey
+        string InvoiceNo
+        timestamp InvoiceDate
+        long DimCustomerKey
+        string Country
+        string SourceSystem
+    }
+    Cancellation {
+        long DimOrderKey
+        string InvoiceNo
+        timestamp InvoiceDate
+        long DimCustomerKey
+        string Country
+        string SourceSystem
+    }
+    OrderDetail {
+        long DimOrderKey
+        long DimProductKey
+        int Quantity
+        float UnitPrice
+        string OrderType
+    }
+```
+
 # Dim Product
 Table containing all information about the products
 ## Columns
 - DimProductKey | LONG
 - StockCode | STR
 - Description | STR
+- ProductModel | STR
+- ProductVersion | STR
+- IsSpecial | BOOL
 - SourceSystem | STR
 ## Business Keys
 Hash32 based on:

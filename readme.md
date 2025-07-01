@@ -63,3 +63,51 @@ Stretch Goals / Extensions
 - Integrate SNS/SQS for alerts on stock shortages.
 - Add geographical clustering of products using k-means.
 - Add A/B testing for ML models using endpoints.
+
+## Warehouse diagram
+```markdown
+```mermaid
+erDiagram
+    Customer ||--o{ Order : DimCustomerKey
+    Customer ||--o{ Cancellation : DimCustomerKey
+    Product ||--o{ OrderDetail: DimProductKey
+    Order ||--o{ OrderDetail: DimOrderKey
+    Cancellation ||--o{ OrderDetail: DimOrderKey
+    Product {
+        long DimProductKey
+        string StockCode
+        string Description
+        string ProductModel
+        string ProductVersion
+        bool IsSpecial
+        string SourceSystem
+    }
+    Customer {
+        int DimCustomerKey
+        string CustomerId
+        string SourceSystem
+    }
+    Order {
+        long DimOrderKey
+        string InvoiceNo
+        timestamp InvoiceDate
+        long DimCustomerKey
+        string Country
+        string SourceSystem
+    }
+    Cancellation {
+        long DimOrderKey
+        string InvoiceNo
+        timestamp InvoiceDate
+        long DimCustomerKey
+        string Country
+        string SourceSystem
+    }
+    OrderDetail {
+        long DimOrderKey
+        long DimProductKey
+        int Quantity
+        float UnitPrice
+        string OrderType
+    }
+```
