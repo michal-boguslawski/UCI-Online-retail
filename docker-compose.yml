@@ -94,7 +94,7 @@ services:
 
   kafka-connect:
     build:
-      context: ./kafka_s3_sink_connector
+      context: ./bronze_kafka_s3_sink_connector
       dockerfile: Dockerfile
     hostname: kafka-connect
     env_file: .env

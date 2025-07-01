@@ -17,7 +17,7 @@ def delivery_report(err, msg):
     print('User record {} successfully produced to {} [{}] at offset {}'.format(
         msg.key(), msg.topic(), msg.partition(), msg.offset()))
     
-def get_data():
+def get_data(file_name):
     """
     function that retrive data from xlsx
     """
@@ -30,7 +30,7 @@ def get_data():
             "CustomerID": str, 
             "Country": str
         }
-    file_name = current_dir + "/Online Retail.xlsx"
+    
     sheet_name = "Online Retail"
     
     df = pd.read_excel(

@@ -1,5 +1,4 @@
 import boto3
-import os
 
 
 def create_or_clear_bucket(bucket_name: str, region: str = "eu-north-1", if_clear: bool = True) -> list | dict | None:
@@ -21,8 +20,3 @@ def create_or_clear_bucket(bucket_name: str, region: str = "eu-north-1", if_clea
         print(f"Objects removed {response}", flush=True)
     return response 
         
-if __name__ == "__main__":
-    region = os.getenv("S3_REGION")
-    bucket_name = os.getenv("S3_BUCKET_NAME")
-    response = create_or_clear_bucket(bucket_name=bucket_name, region=region)
-    print(response)

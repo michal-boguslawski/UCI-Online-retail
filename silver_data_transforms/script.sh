@@ -1,0 +1,1 @@
+spark-submit --packages org.apache.spark:spark-avro_2.12:3.5.1,org.apache.hadoop:hadoop-aws:3.3.4 main.py
