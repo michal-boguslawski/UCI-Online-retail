@@ -1,7 +1,11 @@
 import boto3
 
 
-def create_or_clear_bucket(bucket_name: str, region: str = "eu-north-1", if_clear: bool = True) -> list | dict | None:
+def create_or_clear_bucket(
+    bucket_name: str,
+    region: str = "eu-north-1",
+    if_clear: bool = True
+) -> list | dict | None:
     """
     creates a bucket or if exists clears its content
     """
@@ -18,5 +22,4 @@ def create_or_clear_bucket(bucket_name: str, region: str = "eu-north-1", if_clea
         bucket = boto3.resource("s3").Bucket(bucket_name)
         response = bucket.objects.all().delete()
         print(f"Objects removed {response}", flush=True)
-    return response 
-        
+    return response

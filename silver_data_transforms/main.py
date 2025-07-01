@@ -13,4 +13,3 @@ if __name__ == "__main__":
     transform_dim_order(s3_bucket=s3_bucket)
     transform_dim_cancellation(s3_bucket=s3_bucket)
     transform_dim_order_detail(s3_bucket=s3_bucket)
-    

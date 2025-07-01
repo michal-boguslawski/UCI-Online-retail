@@ -1,11 +1,13 @@
-import time, os
+import time
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka import KafkaException, KafkaError
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 
 def is_fully_ready(metadata):
-    return metadata.brokers and all(broker.id is not None for broker in metadata.brokers.values())
+    return metadata.brokers \
+        and all(broker.id is not None for broker in metadata.brokers.values())
+
 
 # Confirm server access by fetching cluster metadata
 @retry(stop=stop_after_attempt(10), wait=wait_fixed(3))
@@ -16,21 +18,22 @@ def wait_for_kafka(admin_client: AdminClient):
         raise KafkaException("Not all brokers are available yet")
     print("Kafka is fully available")
 
+
 def create_topic(topic: str, kafka_cluster: str):
     # configuration
     conf = {
         "bootstrap.servers": kafka_cluster
     }
 
-    # Create topic
+# Create topic
     admin_client = AdminClient(conf)
-    
+
     try:
         wait_for_kafka(admin_client)
     except KafkaException as e:
         print(f"Kafka not ready: {e}")
         exit(1)
-        
+
     new_topic = NewTopic(topic, num_partitions=2, replication_factor=2)
     fs = admin_client.create_topics(new_topics=[new_topic])
 
