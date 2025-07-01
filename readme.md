@@ -1,48 +1,65 @@
-retail-demand-forecasting/ \n
-├── docker-compose.yaml \n
-├── .env.example \n
-├── data_generator/ \n
-│   ├── Dockerfile \n
-│   └── produce.py \n
-├── spark_streaming_job/ \n
-│   ├── Dockerfile          # optional – packaged Spark job \n
-│   └── streaming_job.py \n
-├── ml_train/ \n
-│   ├── Dockerfile \n
-│   └── train.py \n
-├── model_serving/ \n
-│   ├── Dockerfile \n
-│   ├── main.py             # FastAPI app \n
-│   └── requirements.txt \n
-└── infra/ \n
-    └── cdk/terraform for prod \n
+# UCI Retail Data Engineering and Machine Learning
+Create a data pipeline that feeds information into a data warehouse. Using machine learning techniques on this data, the pipeline generates predictive insights to support decision-making.
 
-┌──────────────┐      ┌────────────────┐      ┌────────────────┐ \n
-│ Data Gen     │─►──► │ Kafka (+ZK)    │─►──►│ Spark Streaming │ \n
-│ (Python)     │      │   container    │      │   container    │ \n
-└──────────────┘      └────────────────┘      └─────┬──────────┘ \n
-                                                     │ writes \n
-┌─────────────────────┐          ┌───────────────────▼──────────┐ \n
-│ NoSQL Store         │◄─────────┤ S3-compatible blob storage   │ \n
-│ (DynamoDB-local or  │   cache   │ (MinIO locally, S3 in prod) │ \n
-│  MongoDB) container │           └──────┬──────────────────────┘ \n
-└─────────────▲───────┘                  │ off-line \n
-              │ realtime                 │ batch \n
-              ▼                          ▼ \n
-        ┌────────────┐           ┌────────────────┐ \n
-        │ Model API  │◄──────────┤ ML training    │ \n
-        │ (FastAPI)  │   model   │  (Python)      │ \n
-        └────────────┘           └────────────────┘ \n
-                   ▲ \n
-                   │ REST / gRPC \n
-                   ▼ \n
-            ┌────────────┐ \n
-            │ Dashboard  │  (optional) \n
-            └────────────┘ \n
+## Project technology stack
+- Python
+- Kafka
+- PySpark
+- AWS S3
+- AWS BOTO3
+- Docker
+- Jupyter Notebooks
 
+## Project Diagram
+
+```
+retail-demand-forecasting/
+├── docker-compose.yaml 
+├── .env ✅ 
+├── config.py ✅ 
+├───aws_handler ✅ 
+│   └───packages ✅ 
+├───bronze_kafka_s3_sink_connector ✅ 
+│   ├───config ✅ 
+│   ├───packages ✅ 
+├───data_generator ✅ 
+│   ├───packages ✅ 
+├───EDA ✅ 
+├───secrets ✅ 
+├───silver_data_transforms ✅ 
+│   └───packages ✅ 
+├───gold_data_transforms 🔴
+│   └───packages 🔴
+├───spark_streaming_job 🔴
+├── ml_train/ 🔴
+├── model_serving/ 🔴 # FastApi
+└── infra/ 🔴
+```
+```
+┌──────────────┐      ┌────────────────┐      ┌────────────────┐
+│ Data Gen     │─►──► │ Kafka (+ZK)    │─►──► │ Kafka Connect  │
+│ (Python)     │      │   container    │      │   container    │
+└──────────────┘      └────────────────┘      └─────┬──────────┘
+                                                    │ writes
+┌─────────────────────┐           ┌─────────────────▼───────────┐
+│ NoSQL Store         │◄───────── ┤            S3               │
+│ (DynamoDB-local or  │   cache   │                             │
+│  MongoDB) container │           └──────┬──────────────────────┘
+└─────────────▲───────┘                  │ off-line
+              │ realtime                 │ batch
+              ▼                          ▼
+        ┌────────────┐           ┌────────────────┐
+        │ Model API  │◄──────────┤ ML training    │
+        │ (FastAPI)  │   model   │  (Python)      │
+        └────────────┘           └────────────────┘
+                   ▲
+                   │ REST / gRPC
+                   ▼
+            ┌────────────┐
+            │ Dashboard  │  (optional)
+            └────────────┘
+```
 Stretch Goals / Extensions
-Integrate SNS/SQS for alerts on stock shortages.
-
-Add geographical clustering of products using k-means.
-
-Add A/B testing for ML models using endpoints.
+- Integrate SNS/SQS for alerts on stock shortages.
+- Add geographical clustering of products using k-means.
+- Add A/B testing for ML models using endpoints.
