@@ -1,0 +1,27 @@
+name: Lint with flake8
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.13.3
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+          # optionally:
+          # pip install -r requirements.txt
+
+      - name: Run flake8
+        run: |
+          flake8 .
