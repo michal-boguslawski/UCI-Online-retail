@@ -65,7 +65,6 @@ Stretch Goals / Extensions
 - Add A/B testing for ML models using endpoints.
 
 ## Warehouse diagram
-```markdown
 ```mermaid
 erDiagram
     Customer ||--o{ Order : DimCustomerKey

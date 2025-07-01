@@ -2,7 +2,6 @@
 Filter out products with 0 unit price
 
 ## Warehouse diagram
-```markdown
 ```mermaid
 erDiagram
     Customer ||--o{ Order : DimCustomerKey
