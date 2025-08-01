@@ -1,18 +1,5 @@
-name: "UCI-online-retail"
+name: "UCI-online-retail-infrastucture"
 services:
-  data_generator:
-    build:
-      context: ./data_generator
-      dockerfile: Dockerfile
-    env_file: .env
-    depends_on:
-      - kafka-1
-      - kafka-2
-      - kafka-ui
-      - schema-registry
-    networks:
-      - retail_net
-
   kafka-1:
     image: bitnami/kafka:3.9
     hostname: kafka-1
@@ -76,66 +63,9 @@ services:
       - 8081:8080
     environment:
       KAFKA_CLUSTERS_0_NAME: docker-local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:9092,kafka-2:9092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAFKA_CLUSTERS}
     networks:
       - retail_net
-
-  aws-handler:
-    build:
-      context: ./aws_handler
-      dockerfile: Dockerfile
-    hostname: aws-handler
-    env_file: .env
-
-    secrets:
-      - aws_access_key_id
-      - aws_secret_access_key
-
-
-  kafka-connect:
-    build:
-      context: ./bronze_kafka_s3_sink_connector
-      dockerfile: Dockerfile
-    hostname: kafka-connect
-    env_file: .env
-    ports:
-      - "8083:8083"  # Kafka Connect REST API
-    depends_on:
-      - kafka-1
-      - kafka-2
-      - aws-handler
-      - data_generator
-    environment:
-      - CONNECT_BOOTSTRAP_SERVERS=kafka-1:9092,kafka-2:9092
-      - CONNECT_REST_ADVERTISED_HOST_NAME=kafka-connect
-      - CONNECT_GROUP_ID=kafka-connect-group
-      - CONNECT_CONFIG_STORAGE_TOPIC=connect-configs
-      - CONNECT_OFFSET_STORAGE_TOPIC=connect-offsets
-      - CONNECT_STATUS_STORAGE_TOPIC=connect-status
-      - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.storage.StringConverter
-      - CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE=false
-      - CONNECT_VALUE_CONVERTER=io.confluent.connect.avro.AvroConverter
-      - CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL=http://schema-registry:8081
-      - CONNECT_VALUE_CONVERTER_ENHANCED_AVRO_SCHEMA_SUPPORT=true
-      # - CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE=false
-      - CONNECT_REPLICATION_FACTOR=1
-      - CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1
-      - CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1
-      - CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
-      # - CONNECT_INTERNAL_KEY_CONVERTER=io.confluent.connect.avro.AvroConverter
-      # - CONNECT_INTERNAL_VALUE_CONVERTER=io.confluent.connect.avro.AvroConverter
-      - CONNECT_PRODUCER_INTERCEPTOR_CLASSES=io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor
-      - CONNECT_CONSUMER_INTERCEPTOR_CLASSES=io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor
-      - CONNECT_OFFSET_FLUSH_INTERVAL_MS=10000
-      - CONNECT_PLUGIN_PATH=/usr/share/java,/usr/share/confluent-hub-components
-      - CONNECT_LOG4J_LOGGERS=org.reflections=ERROR
-      - CONNECT_LOG4J_ROOT_LOGLEVEL=INFO
-    networks:
-      - retail_net
-
-    secrets:
-      - aws_access_key_id
-      - aws_secret_access_key
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.6.0
@@ -166,11 +96,5 @@ volumes:
 
 networks:
   retail_net:
-    driver: bridge
-
-secrets:
-  aws_access_key_id:
-    file: ./secrets/aws_access_key_id
-  aws_secret_access_key:
-    file: ./secrets/aws_secret_access_key
-
+    external: true
+    name: ${NETWORK_NAME}

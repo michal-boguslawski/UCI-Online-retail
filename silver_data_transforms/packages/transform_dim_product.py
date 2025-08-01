@@ -47,6 +47,7 @@ def transform_dim_product(s3_bucket: str):
         f.col("DimProductKey"),
         f.col("Description").isNull().asc()
     ).dropDuplicates(["DimProductKey"])
+    
     df_final = df_final.select(
         "DimProductKey",
         "StockCode",
@@ -57,8 +58,11 @@ def transform_dim_product(s3_bucket: str):
         "SourceSystem"
     )
 
-    # Show a few rows (default is 20, or you can set it explicitly)
-    df_final.show(5, truncate=False)  # Show 5 rows, no truncation
+    (
+        df_final
+        .write
+        .mode("overwrite")
+        .parquet(f"s3a://{s3_bucket}/silver/dim_product/v1")
+    )
 
-    df_final.write.mode("overwrite").parquet(f"s3a://{s3_bucket}/silver/dim_product/v1")
     spark.stop()

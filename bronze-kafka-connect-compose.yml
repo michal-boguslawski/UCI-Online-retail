@@ -1,0 +1,72 @@
+name: "UCI-online-retail-bronze"
+services:
+  aws-handler:
+    build:
+      context: ./aws_handler
+      dockerfile: Dockerfile
+    hostname: aws-handler
+    env_file: .env
+
+    secrets:
+      - aws_access_key_id
+      - aws_secret_access_key
+
+  data_generator:
+    build:
+      context: ./data_generator
+      dockerfile: Dockerfile
+    env_file: .env
+    networks:
+      - retail_net
+
+  kafka-connect:
+    build:
+      context: ./bronze_kafka_s3_sink_connector
+      dockerfile: Dockerfile
+    hostname: kafka-connect
+    env_file: .env
+    ports:
+      - "8083:8083"  # Kafka Connect REST API
+    environment:
+      - CONNECT_BOOTSTRAP_SERVERS=${KAFKA_CLUSTERS}
+      - CONNECT_REST_ADVERTISED_HOST_NAME=kafka-connect
+      - CONNECT_GROUP_ID=kafka-connect-group
+      - CONNECT_CONFIG_STORAGE_TOPIC=connect-configs
+      - CONNECT_OFFSET_STORAGE_TOPIC=connect-offsets
+      - CONNECT_STATUS_STORAGE_TOPIC=connect-status
+      - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.storage.StringConverter
+      - CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE=false
+      - CONNECT_VALUE_CONVERTER=io.confluent.connect.avro.AvroConverter
+      - CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY}
+      - CONNECT_VALUE_CONVERTER_ENHANCED_AVRO_SCHEMA_SUPPORT=true
+      # - CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE=false
+      - CONNECT_REPLICATION_FACTOR=1
+      - CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1
+      - CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1
+      - CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
+      # - CONNECT_INTERNAL_KEY_CONVERTER=io.confluent.connect.avro.AvroConverter
+      # - CONNECT_INTERNAL_VALUE_CONVERTER=io.confluent.connect.avro.AvroConverter
+      - CONNECT_PRODUCER_INTERCEPTOR_CLASSES=io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor
+      - CONNECT_CONSUMER_INTERCEPTOR_CLASSES=io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor
+      - CONNECT_OFFSET_FLUSH_INTERVAL_MS=10000
+      - CONNECT_PLUGIN_PATH=/usr/share/java,/usr/share/confluent-hub-components
+      - CONNECT_LOG4J_LOGGERS=org.reflections=ERROR
+      - CONNECT_LOG4J_ROOT_LOGLEVEL=INFO
+    networks:
+      - retail_net
+
+    secrets:
+      - aws_access_key_id
+      - aws_secret_access_key
+
+networks:
+  retail_net:
+    external: true
+    name: ${NETWORK_NAME}
+
+secrets:
+  aws_access_key_id:
+    file: ./secrets/aws_access_key_id
+  aws_secret_access_key:
+    file: ./secrets/aws_secret_access_key
+

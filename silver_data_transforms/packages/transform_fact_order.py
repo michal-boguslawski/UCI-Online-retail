@@ -2,7 +2,7 @@ import pyspark.sql.functions as f
 from .helper_function import create_session_and_load_bucket
 
 
-def transform_dim_order(s3_bucket: str):
+def transform_fact_order(s3_bucket: str):
     # Initialize Spark session and Read Avro data
     spark, df = create_session_and_load_bucket(s3_bucket)
 
@@ -29,7 +29,7 @@ def transform_dim_order(s3_bucket: str):
                 f.hash(f.lit("Order"), f.col("InvoiceNo"), f.col("SourceSystem"))
         }
     )
-    df_final.select(
+    df_final = df_final.select(
         "DimOrderKey",
         "InvoiceNo",
         "InvoiceDate",
@@ -38,5 +38,10 @@ def transform_dim_order(s3_bucket: str):
         "SourceSystem"
     )
 
-    df_final.write.mode("overwrite").parquet(f"s3a://{s3_bucket}/silver/dim_order/v1")
+    (
+        df_final
+        .write
+        .mode("overwrite")
+        .parquet(f"s3a://{s3_bucket}/silver/fact_order/v1")
+    )
     spark.stop()

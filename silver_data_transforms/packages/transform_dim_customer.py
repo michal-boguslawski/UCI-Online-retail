@@ -28,8 +28,11 @@ def transform_dim_customer(s3_bucket: str):
         "SourceSystem"
     )
 
-    df_final.\
-        write.\
-        mode("overwrite").\
-        parquet(f"s3a://{s3_bucket}/silver/dim_customer/v1")
+    (
+        df_final
+        .write
+        .mode("overwrite")
+        .parquet(f"s3a://{s3_bucket}/silver/dim_customer/v1")
+    )
+
     spark.stop()
