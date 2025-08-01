@@ -20,6 +20,6 @@ class SparkSessionManager:
         df = self.spark.read.format(format).load(s3_path)
         print(df.head())
         self.spark_dfs[df_name] = df
-        
+
     def get_df(self) -> dict:
         return self.spark_dfs

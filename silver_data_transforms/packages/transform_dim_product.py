@@ -47,7 +47,7 @@ def transform_dim_product(s3_bucket: str):
         f.col("DimProductKey"),
         f.col("Description").isNull().asc()
     ).dropDuplicates(["DimProductKey"])
-    
+
     df_final = df_final.select(
         "DimProductKey",
         "StockCode",
