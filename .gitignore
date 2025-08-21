@@ -4,3 +4,4 @@ pom.txt
 */__pycache__/*
 secrets/*
 *.pyc
+**/.ipynb_checkpoints/*

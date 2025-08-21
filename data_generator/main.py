@@ -1,35 +1,33 @@
 import os
-import requests
-from zipfile import ZipFile
 
-from packages.create_topic import create_topic
-from packages.produce import produce_to_kafka
+from packages.create_topic import KafkaHandler
+from packages.helper_functions import download_and_extract_file
+from packages.produce import KafkaProducer
 
 
 if __name__ == "__main__":
+    # get env variables
     kafka_cluster = os.getenv("KAFKA_CLUSTERS")
     kafka_topic = os.getenv("KAFKA_TOPIC")
     schema_registry = os.getenv("SCHEMA_REGISTRY")
 
-    # Step 1: Download the file
+    # get data
     url = 'https://archive.ics.uci.edu/static/public/352/online+retail.zip'
-    zip_path = 'online+retail.zip'
+    file_paths = download_and_extract_file(url)
 
-    response = requests.get(url)
-    with open(zip_path, 'wb') as f:
-        f.write(response.content)
+    # create topic
+    handler = KafkaHandler(bootstrap_servers=kafka_cluster)
+    handler._kafka_set_connection()
+    if handler._check_kafka_connection():
+        handler.create_kafka_topics(kafka_topic)
 
-    # Step 2: Unzip the file
-    with ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall('.')  # Extracts to the current directory
-
-    print(os.listdir(), flush=True)
-    file_name = os.path.abspath("Online Retail.xlsx")
-
-    create_topic(topic=kafka_topic, kafka_cluster=kafka_cluster)
-    produce_to_kafka(
-        topic=kafka_topic,
+    # start producing to kafka
+    kafka_producer = KafkaProducer(
         schema_registry=schema_registry,
-        kafka_cluster=kafka_cluster,
-        file_name=file_name
+        bootstrap_servers=kafka_cluster
+    )
+
+    kafka_producer.run(
+        topic=kafka_topic,
+        file_path=file_paths[0]
     )
